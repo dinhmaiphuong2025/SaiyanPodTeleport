@@ -373,6 +373,22 @@ public class ModEntry : Mod
                 {
                     this.Helper.Input.Suppress(e.Button);
                     this.TryOpenPodMenu(tierInfo);
+                    return;
+                }
+            }
+        }
+
+        // Tương tác trực tiếp với Thương Nhân Thời Không (ChronoMerchant)
+        if (e.Button.IsActionButton())
+        {
+            if (Game1.currentLocation != null && Game1.activeClickableMenu == null)
+            {
+                var merchant = Game1.currentLocation.getCharacterFromName("ChronoMerchant");
+                if (merchant != null && Vector2.Distance(Game1.player.Tile, merchant.Tile) <= 2.2f)
+                {
+                    this.Helper.Input.Suppress(e.Button);
+                    Utility.TryOpenShopMenu("ChronoShop", "ChronoMerchant");
+                    return;
                 }
             }
         }
