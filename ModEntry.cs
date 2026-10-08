@@ -38,12 +38,10 @@ public class ModEntry : Mod
     private int CurrentDay = -1;
     private int DailyUsesCount = 0;
 
-    // Quản lý Idle Animation cho Thương nhân thời không (ChronoMerchant)
+    // Quản lý Idle Animation & Tương tác cho Thương nhân thời không (ChronoMerchant)
     private int MerchantIdleCooldown = 300;
-    private int[]? MerchantCurrentAnim = null;
-    private int MerchantAnimStep = 0;
-    private int MerchantStepTicks = 0;
     private readonly Random MerchantRng = new();
+    private bool WasTalkingToChronoMerchant = false;
 
     public override void Entry(IModHelper helper)
     {
@@ -60,6 +58,7 @@ public class ModEntry : Mod
         helper.Events.GameLoop.UpdateTicked += this.OnUpdateTicked;
         helper.Events.GameLoop.OneSecondUpdateTicked += this.OnOneSecondUpdateTicked;
         helper.Events.Display.RenderedWorld += this.OnRenderedWorld;
+        helper.Events.Display.MenuChanged += this.OnMenuChanged;
         helper.Events.Input.ButtonPressed += this.OnButtonPressed;
     }
 
@@ -388,7 +387,7 @@ public class ModEntry : Mod
         // Tương tác trực tiếp với Thương Nhân Thời Không (ChronoMerchant) - Chỉ nhận đúng phạm vi 1 ô đất
         if (e.Button.IsActionButton() || e.Button.IsUseToolButton() || e.Button == SButton.MouseLeft || e.Button == SButton.MouseRight)
         {
-            if (Context.IsWorldReady && Game1.currentLocation != null && Game1.activeClickableMenu == null)
+            if (Context.IsWorldReady && Game1.currentLocation != null)
             {
                 var merchant = Game1.currentLocation.getCharacterFromName("ChronoMerchant");
                 if (merchant != null)
@@ -399,7 +398,7 @@ public class ModEntry : Mod
 
                     // Bắt buộc trong phạm vi 1 ô đất liền kề (dx <= 1 && dy <= 1) hoặc đang quay mặt trực diện vào ô thương nhân
                     bool isWithinOneTile = (dx <= 1 && dy <= 1) || grabTile == merchant.Tile;
-                    if (isWithinOneTile && (dx <= 1 && dy <= 1))
+                    if (isWithinOneTile && (dx <= 1 && dy <= 1) && Game1.activeClickableMenu == null)
                     {
                         this.Helper.Input.Suppress(e.Button);
                         this.Monitor.Log($"Tương tác với ChronoMerchant trong phạm vi 1 ô (dx={dx}, dy={dy}), mở ChronoShop...", LogLevel.Info);
@@ -408,6 +407,25 @@ public class ModEntry : Mod
                     }
                 }
             }
+        }
+    }
+
+    private void OnMenuChanged(object? sender, MenuChangedEventArgs e)
+    {
+        // Khi mở DialogueBox và người đối thoại là ChronoMerchant
+        if (e.NewMenu is DialogueBox)
+        {
+            if (Game1.currentSpeaker != null && Game1.currentSpeaker.Name == "ChronoMerchant")
+            {
+                this.WasTalkingToChronoMerchant = true;
+            }
+        }
+        // Khi đóng DialogueBox mà trước đó vừa nói chuyện với ChronoMerchant xong -> Mở Shop ngay lập tức
+        else if (e.OldMenu is DialogueBox && this.WasTalkingToChronoMerchant)
+        {
+            this.WasTalkingToChronoMerchant = false;
+            this.Monitor.Log("Hoàn tất đối thoại với ChronoMerchant -> Tự động mở ChronoShop!", LogLevel.Info);
+            Utility.TryOpenShopMenu("ChronoShop", "ChronoMerchant");
         }
     }
 
@@ -537,64 +555,58 @@ public class ModEntry : Mod
         // Nếu người chơi đang mở menu, thoại hoặc đang dịch chuyển, lập tức reset về frame đứng nhìn thẳng (0)
         if (Game1.activeClickableMenu != null || Game1.dialogueUp || this.AnimState.Phase != PodSequencePhase.None)
         {
-            if (this.MerchantCurrentAnim != null)
+            if (merchant.Sprite.currentAnimation != null)
             {
-                this.MerchantCurrentAnim = null;
+                merchant.Sprite.setCurrentAnimation(null);
                 merchant.Sprite.currentFrame = 0;
             }
             return;
         }
 
-        // Đang diễn hoạt động tác rảnh tay
-        if (this.MerchantCurrentAnim != null)
-        {
-            this.MerchantStepTicks++;
-            if (this.MerchantStepTicks >= 12) // mỗi frame chạy 12 ticks (~0.2s)
-            {
-                this.MerchantStepTicks = 0;
-                this.MerchantAnimStep++;
-                if (this.MerchantAnimStep >= this.MerchantCurrentAnim.Length)
-                {
-                    // Hoàn tất động tác rảnh tay, trở lại trạng thái đứng yên
-                    this.MerchantCurrentAnim = null;
-                    merchant.Sprite.currentFrame = 0;
-                    this.MerchantIdleCooldown = this.MerchantRng.Next(360, 600); // nghỉ 6-10 giây mới làm lại
-                }
-                else
-                {
-                    int frame = this.MerchantCurrentAnim[this.MerchantAnimStep];
-                    merchant.Sprite.currentFrame = frame;
-
-                    // Hiệu ứng âm thanh chân thực
-                    if (frame == 17)
-                        Game1.playSound("coin");
-                    else if (frame == 21)
-                        Game1.playSound("wand");
-                }
-            }
+        // Nếu Stardew đang chạy animation thì để engine tự chạy
+        if (merchant.Sprite.currentAnimation != null)
             return;
-        }
 
         // Đếm ngược thời gian nhàn rỗi
         this.MerchantIdleCooldown--;
         if (this.MerchantIdleCooldown <= 0)
         {
-            // Ngẫu nhiên chọn 1 trong 2 động tác:
-            // 0: Tung đồng xu thời gian (Frames 16 -> 17 -> 18 -> 19 -> 0)
-            // 1: Xé nứt không gian (Frames 20 -> 21 -> 22 -> 23 -> 0)
+            this.MerchantIdleCooldown = this.MerchantRng.Next(360, 600); // 6 - 10 giây mới lặp lại
+
             bool isCoinToss = this.MerchantRng.Next(2) == 0;
+            List<FarmerSprite.AnimationFrame> frames;
+
             if (isCoinToss)
             {
-                this.MerchantCurrentAnim = new int[] { 16, 17, 18, 19, 0 };
+                // Tung đồng xu: 16 (chuẩn bị), 17 (búng lên - kêu coin), 18 (lên đỉnh), 19 (bắt lại), 0 (đứng thẳng)
+                frames = new List<FarmerSprite.AnimationFrame>
+                {
+                    new FarmerSprite.AnimationFrame(16, 220),
+                    new FarmerSprite.AnimationFrame(17, 220, false, false, (f) => Game1.playSound("coin"), false),
+                    new FarmerSprite.AnimationFrame(18, 260),
+                    new FarmerSprite.AnimationFrame(19, 220),
+                    new FarmerSprite.AnimationFrame(0, 100, false, false, (f) => {
+                        if (merchant != null) merchant.Sprite.setCurrentAnimation(null);
+                    }, false)
+                };
             }
             else
             {
-                this.MerchantCurrentAnim = new int[] { 20, 21, 22, 23, 0 };
+                // Xé nứt không gian: 20 (tụ năng lượng), 21 (vết rách xuất hiện - tiếng portal vũ trụ trầm êm), 22 (mở rộng rift), 23 (thu nhỏ), 0 (đứng thẳng)
+                frames = new List<FarmerSprite.AnimationFrame>
+                {
+                    new FarmerSprite.AnimationFrame(20, 220),
+                    new FarmerSprite.AnimationFrame(21, 240, false, false, (f) => Game1.playSound("portal"), false),
+                    new FarmerSprite.AnimationFrame(22, 300),
+                    new FarmerSprite.AnimationFrame(23, 220),
+                    new FarmerSprite.AnimationFrame(0, 100, false, false, (f) => {
+                        if (merchant != null) merchant.Sprite.setCurrentAnimation(null);
+                    }, false)
+                };
             }
 
-            this.MerchantAnimStep = 0;
-            this.MerchantStepTicks = 0;
-            merchant.Sprite.currentFrame = this.MerchantCurrentAnim[0];
+            merchant.Sprite.setCurrentAnimation(frames);
+            merchant.Sprite.loop = false;
         }
     }
 
@@ -604,6 +616,16 @@ public class ModEntry : Mod
             return;
 
         this.UpdateMerchantIdleAnimation();
+
+        // Đảm bảo ChronoMerchant luôn có câu thoại sẵn sàng, không bao giờ bị khóa sau 2 lần nói
+        if (Game1.currentLocation != null && Game1.activeClickableMenu == null)
+        {
+            var merchantNpc = Game1.currentLocation.getCharacterFromName("ChronoMerchant");
+            if (merchantNpc != null && merchantNpc.CurrentDialogue.Count == 0)
+            {
+                merchantNpc.CurrentDialogue.Push(new Dialogue(merchantNpc, null, "Chào lữ khách. Ngươi cần mua linh kiện hay thiết bị thời không nào?$h"));
+            }
+        }
 
         if (this.AnimState.Phase == PodSequencePhase.None)
             return;
