@@ -43,6 +43,12 @@ public class ModEntry : Mod
     private readonly Random MerchantRng = new();
     private bool WasTalkingToChronoMerchant = false;
 
+    // Quản lý Lịch hoạt động & Vết nứt thời không rời đi của ChronoMerchant
+    private bool MerchantHasDepartedToday = false;
+    private int MerchantDeparturePhase = 0;
+    private int MerchantDepartureTimer = 0;
+    private Vector2? MerchantHomePosition = null;
+
     public override void Entry(IModHelper helper)
     {
         Instance = this;
@@ -218,11 +224,20 @@ public class ModEntry : Mod
         // Reset số lượt dùng khi bắt đầu ngày mới
         this.CurrentDay = Game1.Date.TotalDays;
         this.DailyUsesCount = 0;
+
+        // Reset trạng thái làm việc cho Thương nhân thời không
+        this.MerchantHasDepartedToday = false;
+        this.MerchantDeparturePhase = 0;
+        this.MerchantDepartureTimer = 0;
     }
 
     private void OnSaveLoaded(object? sender, SaveLoadedEventArgs e)
     {
         this.CurrentDay = Game1.Date.TotalDays;
+        this.MerchantHasDepartedToday = false;
+        this.MerchantDeparturePhase = 0;
+        this.MerchantDepartureTimer = 0;
+        this.MerchantHomePosition = null;
 
         if (this.Config.AutoGrantItemOnLoad && Context.IsWorldReady)
         {
@@ -552,19 +567,24 @@ public class ModEntry : Mod
         if (merchant == null)
             return;
 
-        // Nếu người chơi đang mở menu, thoại hoặc đang dịch chuyển, lập tức reset về frame đứng nhìn thẳng (0)
+        // Nếu thương nhân đã rời đi qua vết nứt tối nay, không xử lý idle
+        if (this.MerchantHasDepartedToday || Game1.timeOfDay >= this.Config.MerchantCloseTime)
+            return;
+
+        // Nếu người chơi đang mở menu, thoại hoặc đang dịch chuyển, lập tức ngắt animation
         if (Game1.activeClickableMenu != null || Game1.dialogueUp || this.AnimState.Phase != PodSequencePhase.None)
         {
-            if (merchant.Sprite.currentAnimation != null)
+            if (merchant.Sprite.currentAnimation.Count > 0)
             {
-                merchant.Sprite.setCurrentAnimation(null);
+                merchant.Sprite.StopAnimation();
+                merchant.Sprite.currentAnimation.Clear();
                 merchant.Sprite.currentFrame = 0;
             }
             return;
         }
 
         // Nếu Stardew đang chạy animation thì để engine tự chạy
-        if (merchant.Sprite.currentAnimation != null)
+        if (merchant.Sprite.currentAnimation.Count > 0)
             return;
 
         // Đếm ngược thời gian nhàn rỗi
@@ -586,7 +606,12 @@ public class ModEntry : Mod
                     new FarmerSprite.AnimationFrame(18, 260),
                     new FarmerSprite.AnimationFrame(19, 220),
                     new FarmerSprite.AnimationFrame(0, 100, false, false, (f) => {
-                        if (merchant != null) merchant.Sprite.setCurrentAnimation(null);
+                        if (merchant != null)
+                        {
+                            merchant.Sprite.StopAnimation();
+                            merchant.Sprite.currentAnimation.Clear();
+                            merchant.Sprite.currentFrame = 0;
+                        }
                     }, false)
                 };
             }
@@ -600,7 +625,12 @@ public class ModEntry : Mod
                     new FarmerSprite.AnimationFrame(22, 300),
                     new FarmerSprite.AnimationFrame(23, 220),
                     new FarmerSprite.AnimationFrame(0, 100, false, false, (f) => {
-                        if (merchant != null) merchant.Sprite.setCurrentAnimation(null);
+                        if (merchant != null)
+                        {
+                            merchant.Sprite.StopAnimation();
+                            merchant.Sprite.currentAnimation.Clear();
+                            merchant.Sprite.currentFrame = 0;
+                        }
                     }, false)
                 };
             }
@@ -610,15 +640,92 @@ public class ModEntry : Mod
         }
     }
 
+    private void UpdateMerchantScheduleAndDeparture()
+    {
+        if (!Context.IsWorldReady || Game1.currentLocation == null)
+            return;
+
+        var merchant = Game1.currentLocation.getCharacterFromName("ChronoMerchant");
+        if (merchant == null)
+            return;
+
+        // Lưu lại vị trí ban đầu của thương nhân nếu chưa lưu
+        if (this.MerchantHomePosition == null && merchant.Position.X > 0)
+        {
+            this.MerchantHomePosition = new Vector2(merchant.Position.X, merchant.Position.Y);
+        }
+
+        // 1. BUỔI TỐI (>= MerchantCloseTime, mặc định 20:00 / 8:00 tối) -> Chui vào vết nứt đóng lại
+        if (Game1.timeOfDay >= this.Config.MerchantCloseTime)
+        {
+            if (!this.MerchantHasDepartedToday)
+            {
+                // Nếu người chơi đang mở menu shop hoặc đang trò chuyện, đợi người chơi xong việc
+                if (Game1.activeClickableMenu != null || Game1.dialogueUp)
+                    return;
+
+                if (this.MerchantDeparturePhase == 0)
+                {
+                    // Bắt đầu mở vết nứt không gian (Frames 20 -> 21 -> 22 -> 23)
+                    this.MerchantDeparturePhase = 1;
+                    this.MerchantDepartureTimer = 0;
+
+                    var frames = new List<FarmerSprite.AnimationFrame>
+                    {
+                        new FarmerSprite.AnimationFrame(20, 250),
+                        new FarmerSprite.AnimationFrame(21, 300, false, false, (f) => Game1.playSound("portal"), false),
+                        new FarmerSprite.AnimationFrame(22, 450),
+                        new FarmerSprite.AnimationFrame(23, 300)
+                    };
+                    merchant.Sprite.setCurrentAnimation(frames);
+                    merchant.Sprite.loop = false;
+                    this.Monitor.Log("Đã đến giờ đóng cửa, ChronoMerchant đang mở vết nứt không gian để rời đi...", LogLevel.Info);
+                }
+                else if (this.MerchantDeparturePhase == 1)
+                {
+                    this.MerchantDepartureTimer++;
+                    // Sau khoảng 1.3 giây (~78 ticks), bước vào vết nứt và biến mất
+                    if (this.MerchantDepartureTimer >= 78)
+                    {
+                        this.MerchantDeparturePhase = 2;
+                        Game1.playSound("wand"); // Tiếng đóng cổng không gian
+                        merchant.Sprite.StopAnimation();
+                        merchant.Sprite.currentAnimation.Clear();
+                        merchant.Sprite.currentFrame = 0;
+
+                        // Di chuyển ra ngoài map
+                        merchant.Position = new Vector2(-99999f, -99999f);
+                        this.MerchantHasDepartedToday = true;
+                        this.Monitor.Log("ChronoMerchant đã bước vào vết nứt không gian và đóng cổng thành công!", LogLevel.Info);
+                    }
+                }
+            }
+        }
+        // 2. BAN NGÀY (< MerchantCloseTime) -> Trở về vị trí làm việc
+        else
+        {
+            if (merchant.Position.X < 0 && this.MerchantHomePosition.HasValue)
+            {
+                merchant.Position = this.MerchantHomePosition.Value;
+                this.MerchantHasDepartedToday = false;
+                this.MerchantDeparturePhase = 0;
+                merchant.Sprite.StopAnimation();
+                merchant.Sprite.currentAnimation.Clear();
+                merchant.Sprite.currentFrame = 0;
+            }
+        }
+    }
+
     private void OnUpdateTicked(object? sender, UpdateTickedEventArgs e)
     {
         if (!Context.IsWorldReady)
             return;
 
         this.UpdateMerchantIdleAnimation();
+        this.UpdateMerchantScheduleAndDeparture();
 
         // Đảm bảo ChronoMerchant luôn có câu thoại sẵn sàng, không bao giờ bị khóa sau 2 lần nói
-        if (Game1.currentLocation != null && Game1.activeClickableMenu == null)
+        if (Game1.currentLocation != null && Game1.activeClickableMenu == null && !this.MerchantHasDepartedToday && Game1.timeOfDay < this.Config.MerchantCloseTime)
         {
             var merchantNpc = Game1.currentLocation.getCharacterFromName("ChronoMerchant");
             if (merchantNpc != null && merchantNpc.CurrentDialogue.Count == 0)
@@ -627,8 +734,18 @@ public class ModEntry : Mod
             }
         }
 
+        // Failsafe khôi phục HUD nếu không có chuỗi bay nào đang diễn ra
         if (this.AnimState.Phase == PodSequencePhase.None)
+        {
+            if (!Game1.displayHUD && Game1.activeClickableMenu == null && !Game1.eventUp)
+            {
+                Game1.displayHUD = true;
+                Game1.viewportFreeze = false;
+                Game1.player.CanMove = true;
+                Game1.player.freezePause = 0;
+            }
             return;
+        }
 
         var tier = this.AnimState.ActiveTier;
 

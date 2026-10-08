@@ -15,4 +15,8 @@ public class ModConfig
 
     // Tọa độ tiếp đất tùy chỉnh do người chơi tự đặt cho từng map: "LocationName:X,Y"
     public System.Collections.Generic.Dictionary<string, string> CustomLandingTiles { get; set; } = new();
+
+    // Lịch hoạt động của Thương Nhân Thời Không (ChronoMerchant)
+    public int MerchantOpenTime { get; set; } = 600;   // 6:00 sáng xuất hiện
+    public int MerchantCloseTime { get; set; } = 2000; // 20:00 (8:00 tối) chui vào vết nứt không gian rời đi
 }
