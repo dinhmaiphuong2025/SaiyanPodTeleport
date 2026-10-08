@@ -1,0 +1,10 @@
+{
+  "Name": "Saiyan Pod Teleport",
+  "Author": "dinhmaiphuong2025",
+  "Version": "1.0.0",
+  "Description": "Saiyan space pod fast travel system with cinematic descent, hatch animations, and sound effects.",
+  "UniqueID": "dinhmaiphuong2025.SaiyanPodTeleport",
+  "EntryDll": "SaiyanPodTeleport.dll",
+  "MinimumApiVersion": "4.0.0",
+  "UpdateKeys": []
+}

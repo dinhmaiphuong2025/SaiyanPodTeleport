@@ -1,0 +1,13 @@
+bin/
+obj/
+deploy.sh
+*.user
+*.suo
+.vscode/
+.idea/
+*.log
+*.tmp
+preview_*.png
+crop_*.png
+__pycache__/
+*.pyc
