@@ -379,16 +379,22 @@ public class ModEntry : Mod
         }
 
         // Tương tác trực tiếp với Thương Nhân Thời Không (ChronoMerchant)
-        if (e.Button.IsActionButton())
+        if (e.Button.IsActionButton() || e.Button.IsUseToolButton() || e.Button == SButton.MouseLeft || e.Button == SButton.MouseRight)
         {
-            if (Game1.currentLocation != null && Game1.activeClickableMenu == null)
+            if (Context.IsWorldReady && Game1.currentLocation != null && Game1.activeClickableMenu == null)
             {
                 var merchant = Game1.currentLocation.getCharacterFromName("ChronoMerchant");
-                if (merchant != null && Vector2.Distance(Game1.player.Tile, merchant.Tile) <= 2.2f)
+                if (merchant != null)
                 {
-                    this.Helper.Input.Suppress(e.Button);
-                    Utility.TryOpenShopMenu("ChronoShop", "ChronoMerchant");
-                    return;
+                    Vector2 grabTile = Game1.player.GetGrabTile();
+                    float dist = Vector2.Distance(Game1.player.Tile, merchant.Tile);
+                    if (dist <= 3.2f || grabTile == merchant.Tile)
+                    {
+                        this.Helper.Input.Suppress(e.Button);
+                        this.Monitor.Log($"Tương tác với ChronoMerchant (khoảng cách: {dist:F1}), mở ChronoShop...", LogLevel.Info);
+                        Utility.TryOpenShopMenu("ChronoShop", "ChronoMerchant");
+                        return;
+                    }
                 }
             }
         }
