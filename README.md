@@ -18,6 +18,18 @@ Mod được tối ưu đặc biệt cho **màn hình cảm ứng điện thoạ
 
 ---
 
+## 📸 Hình Ảnh Trực Quan Trong Game (Screenshots)
+
+| Giao diện chọn điểm đến (Tab Nông Trại) | Tùy chỉnh Ngoại trang & Buff tàu (Tab Ngoại Trang) |
+| :---: | :---: |
+| ![Destination Menu](screenshots/01_destination_menu.png) | ![Skin Customization](screenshots/02_skin_customization.png) |
+
+| Balo người chơi với 4 cấp độ Saiyan Remote |
+| :---: |
+| ![Inventory Remotes](screenshots/03_inventory_remotes.png) |
+
+---
+
 ## 2. Bốn Cấp Độ Điều Khiển (Remote Tiers)
 
 > 💡 **LƯU Ý VỀ CÁCH SỞ HỮU THIẾT BỊ:**  
