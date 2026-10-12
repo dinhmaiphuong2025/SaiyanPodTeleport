@@ -3,6 +3,10 @@ namespace SaiyanPodTeleport;
 public class ModConfig
 {
     public bool AutoGrantItemOnLoad { get; set; } = true;
+
+    // Chế độ cấp remote khi load game: "Base", "Plus", "Pro", "ProMax", "All", "None"
+    public string GrantedRemoteTier { get; set; } = "All";
+
     public int ShopPrice { get; set; } = 500;
     public bool ScreenShakeEnabled { get; set; } = true;
     public string CurrentSkin { get; set; } = "default";

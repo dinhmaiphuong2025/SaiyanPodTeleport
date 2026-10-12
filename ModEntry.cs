@@ -241,16 +241,35 @@ public class ModEntry : Mod
 
         if (this.Config.AutoGrantItemOnLoad && Context.IsWorldReady)
         {
-            // Nhét luôn cả 4 bản vào balo cho người chơi test thoải mái
-            string[] allTiers = new[]
-            {
-                RemoteTierInfo.BaseInfo.ItemId,
-                RemoteTierInfo.PlusInfo.ItemId,
-                RemoteTierInfo.ProInfo.ItemId,
-                RemoteTierInfo.ProMaxInfo.ItemId
-            };
+            var itemIdsToGrant = new List<string>();
+            string tierSetting = this.Config.GrantedRemoteTier?.Trim().ToLowerInvariant() ?? "all";
 
-            foreach (var itemId in allTiers)
+            switch (tierSetting)
+            {
+                case "base":
+                    itemIdsToGrant.Add(RemoteTierInfo.BaseInfo.ItemId);
+                    break;
+                case "plus":
+                    itemIdsToGrant.Add(RemoteTierInfo.PlusInfo.ItemId);
+                    break;
+                case "pro":
+                    itemIdsToGrant.Add(RemoteTierInfo.ProInfo.ItemId);
+                    break;
+                case "promax":
+                case "ultra":
+                    itemIdsToGrant.Add(RemoteTierInfo.ProMaxInfo.ItemId);
+                    break;
+                case "none":
+                    break;
+                default: // "all"
+                    itemIdsToGrant.Add(RemoteTierInfo.BaseInfo.ItemId);
+                    itemIdsToGrant.Add(RemoteTierInfo.PlusInfo.ItemId);
+                    itemIdsToGrant.Add(RemoteTierInfo.ProInfo.ItemId);
+                    itemIdsToGrant.Add(RemoteTierInfo.ProMaxInfo.ItemId);
+                    break;
+            }
+
+            foreach (var itemId in itemIdsToGrant)
             {
                 bool hasItem = Game1.player.Items.Any(it => it != null && (it.ItemId == itemId || it.QualifiedItemId == $"(O){itemId}"));
                 if (!hasItem)
