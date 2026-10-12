@@ -60,6 +60,32 @@ public static class AreaUnlockHelper
             }
         }
 
+        // 5. Kiểm tra Đường ray & Suối nước nóng
+        if (dest.LocationName == "Railroad")
+        {
+            bool earthquakeHappened = Game1.Date.Year > 1 
+                                   || Game1.Date.Season != Season.Spring 
+                                   || Game1.Date.DayOfMonth >= 3
+                                   || Game1.MasterPlayer.mailReceived.Contains("earthquake");
+            if (!earthquakeHappened)
+            {
+                reason = "Lối lên núi và đường ray đang bị sạt lở đá chặn!";
+                return false;
+            }
+        }
+
+        // 6. Kiểm tra Rừng Bí Mật
+        if (dest.LocationName == "Woods")
+        {
+            bool hasSteelAxe = System.Linq.Enumerable.Any(System.Linq.Enumerable.OfType<StardewValley.Tools.Axe>(Game1.player.Items), a => a.UpgradeLevel >= 2);
+            bool beenThere = Game1.player.mailReceived.Contains("beenToWoods");
+            if (!hasSteelAxe && !beenThere)
+            {
+                reason = "Lối vào Rừng Bí Mật đang bị cây gỗ cứng chặn lối! Cần mang theo Rìu Thép trở lên.";
+                return false;
+            }
+        }
+
         return true;
     }
 }

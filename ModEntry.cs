@@ -126,6 +126,7 @@ public class ModEntry : Mod
         // 1. Nông trại
         this.Destinations.Add(new TeleportDestination("farm_house", "Trước Nhà Chính", "Nông trại", "Farm", 64, 18, "Sân trước nhà nông trại"));
         this.Destinations.Add(new TeleportDestination("farm_greenhouse", "Nhà Kính", "Nông trại", "Farm", 28, 17, "Trước cửa nhà kính nông trại"));
+        this.Destinations.Add(new TeleportDestination("farm_south", "Phía Nam Nông Trại", "Nông trại", "Farm", 48, 55, "Lối đi phía nam thông sang rừng Cindersap"));
 
         // 2. Thung lũng Pelican
         this.Destinations.Add(new TeleportDestination("town_square", "Quảng Trường Pelican", "Thung lũng", "Town", 42, 57, "Trung tâm thị trấn Pelican"));
@@ -135,10 +136,16 @@ public class ModEntry : Mod
         this.Destinations.Add(new TeleportDestination("mountain_mines", "Hiệp Hội Mạo Hiểm & Hang Mỏ", "Thung lũng", "Mountain", 74, 12, "Sân trước nhà Hiệp hội Mạo hiểm giả"));
         this.Destinations.Add(new TeleportDestination("forest_marnie", "Trang Trại Marnie", "Thung lũng", "Forest", 83, 21, "Sân rộng trước nhà trang trại Marnie"));
         this.Destinations.Add(new TeleportDestination("forest_wizard", "Tháp Pháp Sư", "Thung lũng", "Forest", 5, 35, "Góc tây nam rừng Cindersap"));
+        this.Destinations.Add(new TeleportDestination("woods_secret", "Rừng Bí Mật", "Thung lũng", "Woods", 18, 15, "Bãi cỏ phẳng gần tượng Old Master Cannoli"));
+        this.Destinations.Add(new TeleportDestination("railroad_spa", "Khu Xe Lửa & Suối Nước Nóng", "Thung lũng", "Railroad", 31, 57, "Khoảng sân trước nhà tắm công cộng"));
+        this.Destinations.Add(new TeleportDestination("bus_stop", "Trạm Xe Buýt", "Thung lũng", "BusStop", 12, 11, "Cạnh xe buýt và lối vào trang trại"));
 
         // 3. Đảo & Sa mạc
         this.Destinations.Add(new TeleportDestination("desert_oasis", "Sa Mạc Calico", "Đảo & Sa mạc", "Desert", 35, 43, "Khu đất cát bằng phẳng sa mạc Calico"));
-        this.Destinations.Add(new TeleportDestination("island_south", "Bến Tàu Đảo Ginger", "Đảo & Sa mạc", "IslandSouth", 14, 22, "Bãi cát đảo Ginger thoáng đãng"));
+        this.Destinations.Add(new TeleportDestination("island_south", "Bến Tàu Đảo Ginger", "Đảo & Sa mạc", "IslandSouth", 14, 22, "Bãi cát bến tàu phía nam đảo Ginger"));
+        this.Destinations.Add(new TeleportDestination("island_west", "Nông Trại Đảo Ginger", "Đảo & Sa mạc", "IslandWest", 77, 40, "Trước hiên nhà nông trại trên đảo Ginger"));
+        this.Destinations.Add(new TeleportDestination("island_north", "Miệng Núi Lửa & Hang Động", "Đảo & Sa mạc", "IslandNorth", 52, 44, "Lối vào hầm ngục núi lửa đảo Ginger"));
+        this.Destinations.Add(new TeleportDestination("island_hut", "Nhà Trên Cây Của Leo", "Đảo & Sa mạc", "IslandEast", 21, 23, "Khu rừng nhiệt đới phía đông đảo"));
     }
 
     private void OnAssetRequested(object? sender, AssetRequestedEventArgs e)
