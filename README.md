@@ -63,6 +63,10 @@ Hệ thống điều khiển được phân chia thành **3 Tab địa điểm**
 17. **Miệng Núi Lửa & Hang Động (Island North):** Lối vào hầm ngục núi lửa đảo Ginger.
 18. **Nhà Trên Cây Của Leo (Island East):** Khu rừng nhiệt đới phía đông đảo Ginger.
 
+> ⚠️ **LƯU Ý TƯƠNG THÍCH BẢN ĐỒ:**  
+> - Mod hiện tại **chỉ hỗ trợ toàn diện các bản đồ gốc của game (Vanilla Stardew Valley 1.6+)**.  
+> - **CHƯA HỖ TRỢ** các địa điểm dịch chuyển thuộc các bản mod mở rộng bản đồ như **Stardew Valley Expanded (SVE)**, **Ridgeside Village (RV)**, **East Scarp**... (Các địa điểm riêng của SVE / RV chưa được tích hợp tọa độ đáp tàu trong phiên bản v1.0.0 này).
+
 ---
 
 ## 4. Hệ Thống Skin Buồng Lái & Lửa Phản Lực
